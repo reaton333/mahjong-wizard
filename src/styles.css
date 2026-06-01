@@ -321,6 +321,26 @@ button {
   color: var(--ink);
 }
 
+.status-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  border-radius: 999px;
+  background: var(--jade);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.status-badge.beta {
+  background: #fff3da;
+  color: #8a6221;
+  border: 1px solid rgba(201, 154, 67, 0.48);
+}
+
 .choice-card.selected {
   border-color: var(--jade);
   background: linear-gradient(145deg, #f3fbf3, #fffdf8);
@@ -332,7 +352,7 @@ button {
   font-size: 1.24rem;
 }
 
-.choice-card span:not(.tile-icon):not(.check-badge) {
+.choice-card span:not(.tile-icon):not(.check-badge):not(.status-badge) {
   line-height: 1.48;
   color: var(--muted);
 }
@@ -542,6 +562,31 @@ button {
   line-height: 1.5;
 }
 
+.house-rules-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(31, 106, 73, 0.24);
+  border-radius: 8px;
+  background: rgba(233, 243, 236, 0.58);
+}
+
+.house-rules-panel > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.house-rules-panel strong {
+  color: var(--jade-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+}
+
+.house-rules-panel span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .review-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -585,6 +630,78 @@ button {
 .final-view {
   display: grid;
   gap: 18px;
+}
+
+.receipt-card,
+.feedback-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf7;
+  padding: 18px;
+}
+
+.receipt-card h2,
+.feedback-card h2 {
+  margin: 0 0 14px;
+  color: var(--jade);
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receipt-card div {
+  display: grid;
+  gap: 10px;
+}
+
+.receipt-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  border-bottom: 1px solid rgba(229, 214, 184, 0.7);
+  padding-bottom: 10px;
+}
+
+.receipt-card p:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.receipt-card span {
+  color: var(--muted);
+}
+
+.receipt-card strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.feedback-card {
+  display: grid;
+  gap: 12px;
+}
+
+.feedback-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.feedback-card textarea {
+  width: 100%;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fffaf0;
+  color: var(--ink);
+  padding: 12px 14px;
+  min-height: 104px;
+}
+
+.feedback-button {
+  text-decoration: none;
+  justify-self: start;
 }
 
 .final-total {
@@ -886,6 +1003,29 @@ button {
   .ghost-button,
   .save-button {
     flex: 1 1 148px;
+  }
+
+  .wizard-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    padding: 12px 0 0;
+    background: linear-gradient(180deg, rgba(251, 246, 234, 0), rgba(251, 246, 234, 0.98) 30%);
+  }
+
+  .wizard-nav.final-nav {
+    position: static;
+    background: transparent;
+    padding-top: 0;
+  }
+
+  .receipt-card p {
+    display: grid;
+    gap: 4px;
+  }
+
+  .receipt-card strong {
+    text-align: left;
   }
 }
 

@@ -9,6 +9,7 @@ import {
   Edit3,
   Heart,
   ListChecks,
+  Mail,
   Plus,
   RotateCcw,
   Save,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import logoMark from "./logo-mark.png";
+import { computeScore } from "./scoring.js";
 
 const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -27,6 +29,7 @@ const rulesets = {
     shortName: "American",
     icon: "flower",
     summary: "Card-value scoring with clear table payments.",
+    status: "Supported MVP",
     description:
       "Best first fit for many U.S. social groups. The player enters the value from the annual card, then the app applies win and payment multipliers.",
     startingStep: "base",
@@ -36,8 +39,9 @@ const rulesets = {
     shortName: "Hong Kong",
     icon: "bamboo",
     summary: "Faan-based scoring with table stakes.",
+    status: "Beta",
     description:
-      "A common Cantonese family/table style. The MVP uses a simple faan doubling model with editable house-rule assumptions.",
+      "Beta path for Cantonese family/table style. Useful for feedback, but American scoring is the supported MVP.",
     startingStep: "base",
   },
   riichi: {
@@ -45,8 +49,9 @@ const rulesets = {
     shortName: "Riichi",
     icon: "spark",
     summary: "Han and fu scoring with ron/tsumo payments.",
+    status: "Beta",
     description:
-      "Japanese mahjong scoring uses han, fu, dealer status, deposits, and repeat counters. This path calculates standard payment math.",
+      "Beta path for Japanese mahjong. Useful for feedback, but American scoring is the supported MVP.",
     startingStep: "base",
   },
 };
@@ -67,7 +72,11 @@ const initialAnswers = {
   americanConcealed: "not-sure",
   americanJokerless: false,
   americanSinglesPairs: false,
-  americanPayment: "standard",
+  americanRuleSelfPickDoubles: true,
+  americanRuleDiscarderPaysDouble: true,
+  americanRuleJokerlessDoubles: true,
+  americanRuleSinglesPairsNoJokerless: true,
+  americanRuleDiscardPaymentScope: "all",
   hkBaseFaan: 3,
   hkWin: "discard",
   hkDiscarder: "Player to Left",
@@ -114,199 +123,6 @@ const stepLabels = {
   review: "Review",
   payments: "Payments",
 };
-
-function ceil100(value) {
-  return Math.ceil(value / 100) * 100;
-}
-
-function computeAmerican(a) {
-  const base = Number(a.americanBaseInput || a.americanBase) || 0;
-  const jokerlessMultiplier = a.americanJokerless && !a.americanSinglesPairs ? 2 : 1;
-  const isSelf = a.americanWin === "self" || a.americanWin === "joker";
-  const players = ["Player to Left", "Across", "Player to Right"];
-  const payments = {};
-
-  if (isSelf) {
-    players.forEach((player) => {
-      payments[player] = base * 2 * jokerlessMultiplier;
-    });
-  } else {
-    players.forEach((player) => {
-      const discardMultiplier = player === a.americanDiscarder ? 2 : 1;
-      payments[player] = base * discardMultiplier * jokerlessMultiplier;
-    });
-  }
-
-  const modifiers = [
-    isSelf && { label: "Self-picked win", value: "each player pays double" },
-    a.americanWin === "joker" && { label: "Joker exchange win", value: "treated as self-picked" },
-    a.americanJokerless &&
-      !a.americanSinglesPairs && { label: "Jokerless hand", value: "payment doubled" },
-    a.americanSinglesPairs && { label: "Singles & pairs category", value: "jokerless is already expected" },
-    a.americanConcealed === "yes" && { label: "Concealed the whole hand", value: "not an added NMJL bonus" },
-  ].filter(Boolean);
-
-  return {
-    unitName: "card value",
-    totalLabel: "Winner receives",
-    handValue: base * jokerlessMultiplier,
-    total: Object.values(payments).reduce((sum, value) => sum + value, 0),
-    payments,
-    modifiers,
-    warning: "American groups vary. This uses the common card-value payment pattern and keeps the card line's printed value as the source of truth.",
-    explanation: [
-      `Started with the selected card value of ${base}.`,
-      isSelf
-        ? "Because the hand was self-picked, each other player pays double."
-        : `${a.americanDiscarder} is marked as the discarder and pays double; the other players pay the base amount.`,
-      a.americanJokerless && !a.americanSinglesPairs
-        ? "Jokerless was selected, so each payment is doubled again."
-        : "No separate jokerless payment double was applied.",
-    ],
-  };
-}
-
-function computeHongKong(a) {
-  const additions = [
-    a.hkWin === "self" && { label: "Self-drawn win", faan: 1 },
-    a.hkConcealed && { label: "Concealed hand", faan: 1 },
-    a.hkAllPungs && { label: "All pungs", faan: 3 },
-    a.hkHalfFlush && !a.hkFullFlush && { label: "Half flush", faan: 3 },
-    a.hkFullFlush && { label: "Full flush", faan: 7 },
-    a.hkDragonPungs > 0 && { label: `${a.hkDragonPungs} dragon pung${a.hkDragonPungs > 1 ? "s" : ""}`, faan: a.hkDragonPungs },
-    a.hkSeatWind && { label: "Seat wind pung", faan: 1 },
-    a.hkRoundWind && { label: "Round wind pung", faan: 1 },
-    a.hkNoFlowers && { label: "No flowers", faan: 1 },
-    a.hkRobKong && { label: "Robbing a kong", faan: 1 },
-    a.hkLastTile && { label: "Last tile", faan: 1 },
-  ].filter(Boolean);
-  const subtotal = Number(a.hkBaseFaan) + additions.reduce((sum, item) => sum + item.faan, 0);
-  const effectiveFaan = Math.min(Math.max(subtotal, Number(a.hkMinimum)), Number(a.hkCap));
-  const handValue = Number(a.hkStake) * 2 ** effectiveFaan;
-  const players = ["Player to Left", "Across", "Player to Right"];
-  const payments = {};
-
-  if (a.hkWin === "self") {
-    players.forEach((player) => {
-      payments[player] = handValue * 2;
-    });
-  } else {
-    players.forEach((player) => {
-      payments[player] = player === a.hkDiscarder ? handValue * 2 : handValue;
-    });
-  }
-
-  return {
-    unitName: "faan",
-    totalLabel: "Winner receives",
-    handValue,
-    total: Object.values(payments).reduce((sum, value) => sum + value, 0),
-    payments,
-    modifiers: additions.map((item) => ({ label: item.label, value: `+${item.faan} faan` })),
-    warning: "Hong Kong tables often use house payment tables. This MVP uses a simple faan-doubling model with discard/self-draw multipliers.",
-    explanation: [
-      `Started with ${a.hkBaseFaan} faan.`,
-      additions.length
-        ? `Added ${additions.reduce((sum, item) => sum + item.faan, 0)} faan from selected bonuses.`
-        : "No bonus faan were selected.",
-      `Applied the table minimum of ${a.hkMinimum} and cap of ${a.hkCap}, giving ${effectiveFaan} payable faan.`,
-      a.hkWin === "self"
-        ? "Self-draw makes every other player pay double the hand value."
-        : `${a.hkDiscarder} discarded the winning tile and pays double; the other players pay the hand value.`,
-    ],
-  };
-}
-
-function riichiLimitBase(han, fu) {
-  if (han >= 13) return { base: 8000, label: "Yakuman" };
-  if (han >= 11) return { base: 6000, label: "Sanbaiman" };
-  if (han >= 8) return { base: 4000, label: "Baiman" };
-  if (han >= 6) return { base: 3000, label: "Haneman" };
-  if (han >= 5 || (han === 4 && fu >= 40) || (han === 3 && fu >= 70)) {
-    return { base: 2000, label: "Mangan" };
-  }
-  return { base: fu * 2 ** (han + 2), label: `${han} han / ${fu} fu` };
-}
-
-function computeRiichi(a) {
-  const bonusHan =
-    (a.riichiRiichi ? 1 : 0) +
-    (a.riichiIppatsu ? 1 : 0) +
-    (a.riichiTsumo ? 1 : 0) +
-    (a.riichiPinfu ? 1 : 0) +
-    (a.riichiTanyao ? 1 : 0) +
-    Number(a.riichiYakuhai) +
-    Number(a.riichiDora) +
-    Number(a.riichiUraDora) +
-    Number(a.riichiRedFives);
-  const han = Number(a.riichiHan) + bonusHan;
-  const fu = Number(a.riichiFu);
-  const limit = riichiLimitBase(han, fu);
-  const honba = Number(a.riichiHonba);
-  const sticks = Number(a.riichiSticks);
-  const payments = {};
-  const players = ["Player to Left", "Across", "Player to Right"];
-
-  if (a.riichiWin === "ron") {
-    const basePayment = a.riichiDealer ? ceil100(limit.base * 6) : ceil100(limit.base * 4);
-    players.forEach((player) => {
-      payments[player] = player === a.riichiDiscarder ? basePayment + honba * 300 : 0;
-    });
-  } else if (a.riichiDealer) {
-    const each = ceil100(limit.base * 2) + honba * 100;
-    players.forEach((player) => {
-      payments[player] = each;
-    });
-  } else {
-    players.forEach((player) => {
-      const isDealerOpponent = player === a.riichiDealerOpponent;
-      payments[player] = (isDealerOpponent ? ceil100(limit.base * 2) : ceil100(limit.base)) + honba * 100;
-    });
-  }
-
-  if (sticks > 0) {
-    payments["Riichi stick pool"] = sticks * 1000;
-  }
-
-  const modifiers = [
-    a.riichiRiichi && { label: "Riichi", value: "+1 han" },
-    a.riichiIppatsu && { label: "Ippatsu", value: "+1 han" },
-    a.riichiTsumo && { label: "Menzen tsumo", value: "+1 han" },
-    a.riichiPinfu && { label: "Pinfu", value: "+1 han" },
-    a.riichiTanyao && { label: "Tanyao", value: "+1 han" },
-    a.riichiYakuhai > 0 && { label: "Yakuhai", value: `+${a.riichiYakuhai} han` },
-    a.riichiDora > 0 && { label: "Dora", value: `+${a.riichiDora} han` },
-    a.riichiUraDora > 0 && { label: "Ura dora", value: `+${a.riichiUraDora} han` },
-    a.riichiRedFives > 0 && { label: "Red fives", value: `+${a.riichiRedFives} han` },
-  ].filter(Boolean);
-
-  return {
-    unitName: "score",
-    totalLabel: "Winner receives",
-    handValue: limit.label,
-    total: Object.values(payments).reduce((sum, value) => sum + value, 0),
-    payments,
-    modifiers,
-    warning: "Riichi scoring is precise, but yaku validity is still up to the player. The app assumes the selected yaku/han are legal together.",
-    explanation: [
-      `Started with ${a.riichiHan} base han and ${fu} fu.`,
-      bonusHan ? `Added ${bonusHan} bonus han from selected yaku and dora.` : "No bonus han were selected.",
-      `The hand evaluates as ${limit.label}.`,
-      a.riichiWin === "ron"
-        ? `${a.riichiDiscarder} pays the ron amount${honba ? ` plus ${honba} honba counter(s)` : ""}.`
-        : a.riichiDealer
-          ? `Dealer tsumo makes all three opponents pay the same amount${honba ? ` with ${honba} honba counter(s)` : ""}.`
-          : `Non-dealer tsumo makes ${a.riichiDealerOpponent} pay the dealer share${honba ? ` with ${honba} honba counter(s)` : ""}.`,
-      sticks ? `${sticks} riichi stick${sticks > 1 ? "s" : ""} on the table go to the winner.` : "No riichi deposit sticks were added.",
-    ],
-  };
-}
-
-function computeScore(a) {
-  if (a.ruleset === "hongkong") return computeHongKong(a);
-  if (a.ruleset === "riichi") return computeRiichi(a);
-  return computeAmerican(a);
-}
 
 function App() {
   const [answers, setAnswers] = useState(initialAnswers);
@@ -388,18 +204,22 @@ function App() {
             update={update}
             result={result}
           />
-          <nav className="wizard-nav" aria-label="Wizard controls">
+          <nav className={`wizard-nav ${step === "payments" ? "final-nav" : ""}`} aria-label="Wizard controls">
             <button className="secondary-button" onClick={() => go(-1)} disabled={currentIndex === 0}>
               <ArrowLeft size={18} />
               Back
             </button>
-            <button className="text-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
-              Skip for now
-            </button>
-            <button className="primary-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
-              Continue
-              <ArrowRight size={18} />
-            </button>
+            {step !== "payments" && (
+              <>
+                <button className="text-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
+                  Skip for now
+                </button>
+                <button className="primary-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
+                  Continue
+                  <ArrowRight size={18} />
+                </button>
+              </>
+            )}
           </nav>
         </section>
 
@@ -555,6 +375,7 @@ function RulesetStep({ answers, update }) {
           className={`choice-card ${answers.ruleset === key ? "selected" : ""}`}
           onClick={() => update("ruleset", key)}
         >
+          <span className={`status-badge ${ruleset.status === "Beta" ? "beta" : ""}`}>{ruleset.status}</span>
           <TileIcon type={ruleset.icon} />
           <strong>{ruleset.name}</strong>
           <span>{ruleset.description}</span>
@@ -631,15 +452,6 @@ function BaseStep({ answers, update }) {
           }}
         />
       </label>
-      <SelectField
-        label="Table payment pattern"
-        value={answers.americanPayment}
-        onChange={(value) => update("americanPayment", value)}
-        options={[
-          ["standard", "Common: discarder pays double"],
-          ["simple", "Simple table: use common pattern"],
-        ]}
-      />
     </div>
   );
 }
@@ -720,6 +532,27 @@ function DetailsStep({ answers, update }) {
           ]}
         />
         <Toggle label="Hand is from Singles & Pairs" checked={answers.americanSinglesPairs} onChange={(value) => update("americanSinglesPairs", value)} />
+        <div className="house-rules-panel">
+          <div>
+            <strong>American house rules</strong>
+            <span>Defaults match common social-table payment rules. Adjust only if your group plays differently.</span>
+          </div>
+          <div className="toggle-grid">
+            <Toggle label="Self-pick makes every player pay double" checked={answers.americanRuleSelfPickDoubles} onChange={(value) => update("americanRuleSelfPickDoubles", value)} />
+            <Toggle label="Discarder pays double on discard wins" checked={answers.americanRuleDiscarderPaysDouble} onChange={(value) => update("americanRuleDiscarderPaysDouble", value)} />
+            <Toggle label="Jokerless doubles payments" checked={answers.americanRuleJokerlessDoubles} onChange={(value) => update("americanRuleJokerlessDoubles", value)} />
+            <Toggle label="Singles & Pairs suppresses jokerless double" checked={answers.americanRuleSinglesPairsNoJokerless} onChange={(value) => update("americanRuleSinglesPairsNoJokerless", value)} />
+          </div>
+          <SelectField
+            label="Who pays on discard wins?"
+            value={answers.americanRuleDiscardPaymentScope}
+            onChange={(value) => update("americanRuleDiscardPaymentScope", value)}
+            options={[
+              ["all", "All players pay; discarder may pay double"],
+              ["discarder-only", "Only the discarder pays"],
+            ]}
+          />
+        </div>
       </div>
     );
   }
@@ -791,7 +624,7 @@ function ReviewStep({ answers, result }) {
         title="Starting value"
         value={
           answers.ruleset === "american"
-            ? `${answers.americanBase} points`
+            ? `${result.handValue} points`
             : answers.ruleset === "hongkong"
               ? `${answers.hkBaseFaan} faan`
               : `${answers.riichiHan} han / ${answers.riichiFu} fu`
@@ -824,13 +657,72 @@ function FinalStep({ result, answers }) {
           </div>
         ))}
       </div>
+      <ReceiptRows rows={result.receiptRows} />
       <div className="explanation-list">
         {result.explanation.map((line) => (
           <p key={line}>{line}</p>
         ))}
       </div>
       <InfoNote>{result.warning}</InfoNote>
+      <FeedbackBox result={result} answers={answers} />
     </div>
+  );
+}
+
+function ReceiptRows({ rows = [] }) {
+  if (!rows.length) return null;
+
+  return (
+    <section className="receipt-card">
+      <h2>Scoring Receipt</h2>
+      <div>
+        {rows.map((row) => (
+          <p key={`${row.label}-${row.value}`}>
+            <span>{row.label}</span>
+            <strong>{row.value}</strong>
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeedbackBox({ result, answers }) {
+  const [message, setMessage] = useState("");
+  const subject = encodeURIComponent("Mahjong Wizard feedback");
+  const body = encodeURIComponent(
+    [
+      "Hi Ross,",
+      "",
+      "I tried Mahjong Wizard and have feedback:",
+      "",
+      message || "[Type feedback here]",
+      "",
+      "---",
+      `Ruleset: ${rulesets[answers.ruleset].name}`,
+      `Winner receives: ${formatValue(result.total)}`,
+      `Current screen result: ${window.location.href}`,
+    ].join("\n"),
+  );
+  const mailto = `mailto:rosseaton92@gmail.com?subject=${subject}&body=${body}`;
+
+  return (
+    <section className="feedback-card">
+      <div>
+        <h2>Send feedback</h2>
+        <p>Notice a missing rule or wrong payout? Open a prefilled email draft for now.</p>
+      </div>
+      <textarea
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        placeholder="What should we fix or add?"
+        rows={4}
+      />
+      <a className="primary-button feedback-button" href={mailto}>
+        <Mail size={18} />
+        Email Ross
+      </a>
+    </section>
   );
 }
 
