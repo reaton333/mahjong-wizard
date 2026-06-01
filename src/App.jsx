@@ -12,7 +12,6 @@ import {
   Mail,
   Plus,
   RotateCcw,
-  Save,
   Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -127,13 +126,6 @@ const stepLabels = {
 function App() {
   const [answers, setAnswers] = useState(initialAnswers);
   const [step, setStep] = useState("ruleset");
-  const [savedCount, setSavedCount] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("mahjong-wizard-hands") || "[]").length;
-    } catch {
-      return 0;
-    }
-  });
   const result = useMemo(() => computeScore(answers), [answers]);
   const currentIndex = stepOrder.indexOf(step);
 
@@ -162,20 +154,6 @@ function App() {
     navigateTo("ruleset");
   }
 
-  function saveHand() {
-    const savedHand = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      ruleset: answers.ruleset,
-      answers,
-      result,
-    };
-    const existing = JSON.parse(localStorage.getItem("mahjong-wizard-hands") || "[]");
-    const next = [savedHand, ...existing].slice(0, 20);
-    localStorage.setItem("mahjong-wizard-hands", JSON.stringify(next));
-    setSavedCount(next.length);
-  }
-
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -187,10 +165,6 @@ function App() {
           <button className="ghost-button" onClick={reset}>
             <RotateCcw size={18} />
             New Hand
-          </button>
-          <button className="save-button" onClick={saveHand}>
-            <Save size={18} />
-            {savedCount ? `Saved ${savedCount}` : "Save Hand"}
           </button>
         </div>
       </header>
