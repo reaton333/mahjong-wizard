@@ -118,6 +118,10 @@ button {
   border-color: transparent;
 }
 
+.primary-button.compact {
+  min-width: 0;
+}
+
 .secondary-button:disabled,
 .primary-button:disabled,
 .text-button:disabled {
@@ -136,6 +140,266 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 386px;
   gap: 22px;
+}
+
+.home-workspace {
+  display: block;
+  width: min(1240px, calc(100vw - 48px));
+}
+
+.front-door {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(340px, 0.72fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.front-copy,
+.front-preview,
+.front-steps article {
+  border: 1px solid rgba(229, 214, 184, 0.82);
+  border-radius: 8px;
+  background: rgba(255, 253, 247, 0.78);
+  box-shadow: var(--shadow);
+}
+
+.front-copy {
+  min-height: 520px;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  padding: clamp(28px, 4vw, 52px);
+  background:
+    linear-gradient(135deg, rgba(255, 253, 247, 0.88), rgba(255, 248, 233, 0.94)),
+    var(--paper);
+}
+
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 9px;
+  color: var(--jade-dark);
+  border: 1px solid rgba(31, 106, 73, 0.22);
+  border-radius: 999px;
+  background: var(--jade-soft);
+  padding: 9px 13px;
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.eyebrow svg {
+  color: var(--gold);
+}
+
+.front-copy h1 {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.75rem, 5.6vw, 4.9rem);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.front-copy p {
+  max-width: 660px;
+  margin: 0;
+  color: #54504b;
+  font-size: clamp(1.04rem, 1.7vw, 1.18rem);
+  line-height: 1.5;
+}
+
+.front-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.hero-cta {
+  min-height: 54px;
+  padding-inline: 24px;
+  font-weight: 850;
+}
+
+.front-actions a {
+  text-decoration: none;
+}
+
+.ruleset-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ruleset-ribbon span {
+  min-height: 54px;
+  display: inline-grid;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid rgba(31, 106, 73, 0.22);
+  border-radius: 8px;
+  background: #fffdf7;
+  color: var(--jade-dark);
+  padding: 8px 13px;
+  font-weight: 850;
+}
+
+.ruleset-ribbon span.beta {
+  border-color: rgba(201, 154, 67, 0.4);
+  color: #704f19;
+  background: #fff8e7;
+}
+
+.ruleset-ribbon strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.front-preview {
+  min-height: 520px;
+  align-self: stretch;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  padding: clamp(22px, 3vw, 32px);
+  background:
+    linear-gradient(160deg, rgba(31, 106, 73, 0.08), rgba(255, 253, 247, 0.92) 48%),
+    var(--paper);
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.preview-header img {
+  width: 62px;
+  height: 62px;
+  border-radius: 12px;
+}
+
+.preview-header span {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+}
+
+.preview-header strong {
+  color: var(--jade-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+}
+
+.preview-total {
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--jade), #154a35);
+  color: white;
+  padding: 26px;
+}
+
+.preview-total span {
+  display: block;
+  margin-bottom: 6px;
+  color: #f9dc9b;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+
+.preview-total strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(4.5rem, 9vw, 7rem);
+  line-height: 0.9;
+}
+
+.preview-payments {
+  display: grid;
+  gap: 10px;
+}
+
+.preview-payments span {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf7;
+  padding: 0 16px;
+}
+
+.preview-payments em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.preview-payments strong {
+  color: var(--coral);
+  font-size: 1.28rem;
+}
+
+.preview-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(201, 154, 67, 0.42);
+  border-radius: 8px;
+  background: #fff8e7;
+  color: #5d5139;
+  line-height: 1.45;
+  padding: 14px;
+}
+
+.preview-note svg {
+  flex: 0 0 auto;
+  color: var(--gold);
+  margin-top: 2px;
+}
+
+.front-steps {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.front-steps article {
+  min-height: 156px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 20px;
+}
+
+.front-steps article > span {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--jade);
+  color: white;
+  font-weight: 900;
+}
+
+.front-steps strong {
+  color: var(--jade-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+}
+
+.front-steps p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.48;
 }
 
 .main-panel,
@@ -954,6 +1218,19 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .home-workspace {
+    width: min(100% - 48px, 920px);
+  }
+
+  .front-door {
+    grid-template-columns: 1fr;
+  }
+
+  .front-copy,
+  .front-preview {
+    min-height: auto;
+  }
+
   .score-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -979,13 +1256,31 @@ button {
     margin-top: 14px;
   }
 
+  .home-workspace {
+    width: min(100% - 24px, 720px);
+  }
+
   .option-grid.three,
   .choice-row,
   .toggle-grid,
   .review-grid,
   .score-rail,
-  .chip-grid {
+  .chip-grid,
+  .front-steps {
     grid-template-columns: 1fr;
+  }
+
+  .front-copy {
+    padding: 28px 20px;
+  }
+
+  .front-copy h1 {
+    font-size: clamp(2.6rem, 13vw, 4.8rem);
+  }
+
+  .front-actions .primary-button,
+  .front-actions .secondary-button {
+    flex: 1 1 220px;
   }
 
   .question-panel {
@@ -1041,6 +1336,15 @@ button {
 
   .main-panel {
     padding: 12px;
+  }
+
+  .front-preview,
+  .front-steps article {
+    padding: 16px;
+  }
+
+  .ruleset-ribbon span {
+    flex: 1 1 136px;
   }
 
   .question-panel h1 {

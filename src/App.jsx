@@ -126,6 +126,7 @@ const stepLabels = {
 function App() {
   const [answers, setAnswers] = useState(initialAnswers);
   const [step, setStep] = useState("ruleset");
+  const [hasStarted, setHasStarted] = useState(false);
   const result = useMemo(() => computeScore(answers), [answers]);
   const currentIndex = stepOrder.indexOf(step);
 
@@ -144,6 +145,16 @@ function App() {
     scrollToTop();
   }
 
+  function startScoring() {
+    setHasStarted(true);
+    navigateTo("ruleset");
+  }
+
+  function goHome() {
+    setHasStarted(false);
+    scrollToTop();
+  }
+
   function go(offset) {
     const next = stepOrder[Math.min(Math.max(currentIndex + offset, 0), stepOrder.length - 1)];
     navigateTo(next);
@@ -151,58 +162,73 @@ function App() {
 
   function reset() {
     setAnswers(initialAnswers);
+    setHasStarted(true);
     navigateTo("ruleset");
   }
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <button className="brand" onClick={() => navigateTo("ruleset")} aria-label="Go to ruleset step">
+        <button className="brand" onClick={goHome} aria-label="Go to Mahjong Wizard home">
           <img src={logoMark} alt="" />
           <span>Mahjong <strong>Wizard</strong></span>
         </button>
         <div className="header-actions">
-          <button className="ghost-button" onClick={reset}>
-            <RotateCcw size={18} />
-            New Hand
-          </button>
+          {!hasStarted && (
+            <button className="primary-button compact" onClick={startScoring}>
+              Start scoring
+              <ArrowRight size={18} />
+            </button>
+          )}
+          {hasStarted && (
+            <button className="ghost-button" onClick={reset}>
+              <RotateCcw size={18} />
+              New Hand
+            </button>
+          )}
         </div>
       </header>
 
-      <main className="workspace">
-        <section className="main-panel">
-          <Progress current={step} onStep={navigateTo} />
-          <QuestionPanel
-            step={step}
-            answers={answers}
-            update={update}
-            result={result}
-          />
-          <nav className={`wizard-nav ${step === "payments" ? "final-nav" : ""}`} aria-label="Wizard controls">
-            <button className="secondary-button" onClick={() => go(-1)} disabled={currentIndex === 0}>
-              <ArrowLeft size={18} />
-              Back
-            </button>
-            {step !== "payments" && (
-              <>
-                <button className="text-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
-                  Skip for now
+      <main className={`workspace ${hasStarted ? "" : "home-workspace"}`}>
+        {!hasStarted ? (
+          <FrontDoor onStart={startScoring} />
+        ) : (
+          <>
+            <section className="main-panel">
+              <Progress current={step} onStep={navigateTo} />
+              <QuestionPanel
+                step={step}
+                answers={answers}
+                update={update}
+                result={result}
+              />
+              <nav className={`wizard-nav ${step === "payments" ? "final-nav" : ""}`} aria-label="Wizard controls">
+                <button className="secondary-button" onClick={() => go(-1)} disabled={currentIndex === 0}>
+                  <ArrowLeft size={18} />
+                  Back
                 </button>
-                <button className="primary-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
-                  Continue
-                  <ArrowRight size={18} />
-                </button>
-              </>
-            )}
-          </nav>
-        </section>
+                {step !== "payments" && (
+                  <>
+                    <button className="text-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
+                      Skip for now
+                    </button>
+                    <button className="primary-button" onClick={() => go(1)} disabled={currentIndex >= stepOrder.length - 1}>
+                      Continue
+                      <ArrowRight size={18} />
+                    </button>
+                  </>
+                )}
+              </nav>
+            </section>
 
-        <aside className="score-rail">
-          <ScoreCard result={result} answers={answers} />
-          <PaymentCard result={result} answers={answers} onExplain={() => navigateTo("payments")} />
-        </aside>
+            <aside className="score-rail">
+              <ScoreCard result={result} answers={answers} />
+              <PaymentCard result={result} answers={answers} onExplain={() => navigateTo("payments")} />
+            </aside>
 
-        <SelectionTray answers={answers} setStep={navigateTo} result={result} />
+            <SelectionTray answers={answers} setStep={navigateTo} result={result} />
+          </>
+        )}
       </main>
 
       <footer className="app-footer">
@@ -216,6 +242,81 @@ function App() {
         </span>
       </footer>
     </div>
+  );
+}
+
+function FrontDoor({ onStart }) {
+  const frontDoorSteps = [
+    ["Choose your style", "Start with American/NMJL-style scoring, or preview Hong Kong and Riichi beta paths."],
+    ["Answer one thing at a time", "The wizard asks only the questions that matter for the selected ruleset."],
+    ["See who pays what", "Finish with a score, payment table, and plain-English explanation."],
+  ];
+
+  return (
+    <section className="front-door" aria-labelledby="front-door-title">
+      <div className="front-copy">
+        <span className="eyebrow">
+          <Sparkles size={18} />
+          Mahjong scoring, without table math
+        </span>
+        <h1 id="front-door-title">Score a winning hand before the next shuffle.</h1>
+        <p>
+          Mahjong Wizard walks players through the final hand questions, applies the selected table rules,
+          and explains the payment breakdown clearly enough to show everyone at the table.
+        </p>
+        <div className="front-actions">
+          <button className="primary-button hero-cta" onClick={onStart}>
+            Start scoring
+            <ArrowRight size={20} />
+          </button>
+          <a className="secondary-button" href="#how-it-works">
+            <BookOpen size={18} />
+            How it works
+          </a>
+        </div>
+        <div className="ruleset-ribbon" aria-label="Supported rulesets">
+          {Object.values(rulesets).map((ruleset) => (
+            <span key={ruleset.name} className={ruleset.status === "Beta" ? "beta" : ""}>
+              {ruleset.shortName}
+              <strong>{ruleset.status}</strong>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="front-preview" aria-label="Example score preview">
+        <div className="preview-header">
+          <img src={logoMark} alt="" />
+          <span>
+            <strong>Example hand</strong>
+            American / NMJL-style
+          </span>
+        </div>
+        <div className="preview-total">
+          <span>Winner receives</span>
+          <strong>100</strong>
+        </div>
+        <div className="preview-payments">
+          <span><em>Player to Left</em><strong>50</strong></span>
+          <span><em>Across</em><strong>25</strong></span>
+          <span><em>Player to Right</em><strong>25</strong></span>
+        </div>
+        <div className="preview-note">
+          <ClipboardList size={18} />
+          25-point card value, discard win, discarder pays double.
+        </div>
+      </div>
+
+      <div className="front-steps" id="how-it-works">
+        {frontDoorSteps.map(([title, body], index) => (
+          <article key={title}>
+            <span>{index + 1}</span>
+            <strong>{title}</strong>
+            <p>{body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
